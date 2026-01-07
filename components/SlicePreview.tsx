@@ -7,9 +7,10 @@ import JSZip from 'jszip';
 interface SlicePreviewProps {
   slices: SliceResult[];
   gridCols: number;
+  format: 'webp' | 'jpeg' | 'png';
 }
 
-const SlicePreview: React.FC<SlicePreviewProps> = ({ slices, gridCols }) => {
+const SlicePreview: React.FC<SlicePreviewProps> = ({ slices, gridCols, format }) => {
   const [isZipping, setIsZipping] = useState(false);
 
   // Helper to format byte sizes
@@ -42,13 +43,13 @@ const SlicePreview: React.FC<SlicePreviewProps> = ({ slices, gridCols }) => {
       const zip = new JSZip();
       slices.forEach((slice, idx) => {
         const base64Data = slice.dataUrl.split(',')[1];
-        zip.file(`slice_${idx + 1}.webp`, base64Data, { base64: true });
+        zip.file(`slice_${idx + 1}.${format}`, base64Data, { base64: true });
       });
 
       const blob = await zip.generateAsync({ type: 'blob' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `grid_slices_${slices.length}_tiles.zip`;
+      link.download = `grid_slices_${slices.length}_tiles_${format}.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -64,7 +65,7 @@ const SlicePreview: React.FC<SlicePreviewProps> = ({ slices, gridCols }) => {
   const downloadOne = (dataUrl: string, idx: number) => {
     const link = document.createElement('a');
     link.href = dataUrl;
-    link.download = `slice_${idx + 1}.webp`;
+    link.download = `slice_${idx + 1}.${format}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -84,10 +85,10 @@ const SlicePreview: React.FC<SlicePreviewProps> = ({ slices, gridCols }) => {
         <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
                 <Archive className="w-5 h-5 text-indigo-400" />
-                <span className="text-slate-200 font-bold">{slices.length} Optimized Assets</span>
+                <span className="text-slate-200 font-bold">{slices.length} {format.toUpperCase()} Assets</span>
             </div>
             <p className="text-xs text-slate-500 font-medium uppercase tracking-widest">
-                Total Archive Size: <span className="text-emerald-400 font-mono">{formatSize(totalSize)}</span>
+                Estimated Archive Size: <span className="text-emerald-400 font-mono">{formatSize(totalSize)}</span>
             </p>
         </div>
         <button 
@@ -103,7 +104,7 @@ const SlicePreview: React.FC<SlicePreviewProps> = ({ slices, gridCols }) => {
           ) : (
             <>
               <Download className="w-5 h-5" /> 
-              Download All (.ZIP)
+              Download All (.{format.toUpperCase()})
             </>
           )}
         </button>
@@ -127,11 +128,16 @@ const SlicePreview: React.FC<SlicePreviewProps> = ({ slices, gridCols }) => {
                   {formatSize(sliceSizes[i])}
                 </div>
 
+                {/* Format badge overlay */}
+                <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-indigo-600/60 backdrop-blur-md rounded text-[9px] font-bold text-white border border-white/20 uppercase">
+                  {format}
+                </div>
+
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
                     <button 
                         onClick={() => downloadOne(slice.dataUrl, slice.index)}
                         className="p-3 bg-white text-slate-900 rounded-full hover:bg-indigo-50 transition-transform scale-90 group-hover:scale-100 duration-300"
-                        title="Download WebP"
+                        title={`Download ${format.toUpperCase()}`}
                     >
                         <Download className="w-5 h-5" />
                     </button>
@@ -153,9 +159,9 @@ const SlicePreview: React.FC<SlicePreviewProps> = ({ slices, gridCols }) => {
             <ExternalLink className="w-8 h-8 text-indigo-400/80" />
         </div>
         <div>
-            <h4 className="text-lg font-semibold text-white mb-1">Compression Verification</h4>
+            <h4 className="text-lg font-semibold text-white mb-1">Download Options</h4>
             <p className="text-slate-400 max-w-xl text-sm leading-relaxed">
-                Check the <b>KB size badge</b> on each preview tile above. Lowering the <b>Max Quality</b> slider and clicking <b>Apply & Update</b> will instantly reduce these numbers.
+                Currently showing slices in <b>{format.toUpperCase()}</b>. To switch formats, use the <b>Asset Configuration</b> panel in the sidebar. Slices are optimized on-the-fly for your selected format.
             </p>
         </div>
       </div>

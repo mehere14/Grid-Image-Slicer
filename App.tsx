@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Upload, Scissors, Download, RefreshCw, Layers, Grid3X3, LayoutGrid, Zap, SlidersHorizontal, AlertCircle, X, AlignJustify } from 'lucide-react';
+import { Upload, Scissors, Download, RefreshCw, Layers, Grid3X3, LayoutGrid, Zap, SlidersHorizontal, AlertCircle, X, AlignJustify, Image as ImageIcon, FileImage } from 'lucide-react';
 import { GridLines, SliceResult, Boundary } from './types';
 import GridEditor from './components/GridEditor';
 import SlicePreview from './components/SlicePreview';
@@ -9,6 +9,7 @@ const App: React.FC = () => {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [gridConfig, setGridConfig] = useState({ rows: 3, cols: 3 });
   const [quality, setQuality] = useState(0.6); 
+  const [outputFormat, setOutputFormat] = useState<'webp' | 'jpeg' | 'png'>('webp');
   const [optimizeResolution, setOptimizeResolution] = useState(true);
   const [gridLines, setGridLines] = useState<GridLines>({
     horizontal: [],
@@ -57,7 +58,7 @@ const App: React.FC = () => {
     if (slices.length > 0) {
       setSettingsDirty(true);
     }
-  }, [quality, optimizeResolution, gridConfig]);
+  }, [quality, optimizeResolution, gridConfig, outputFormat]);
 
   useEffect(() => {
     if (image) {
@@ -110,6 +111,8 @@ const App: React.FC = () => {
     const newSlices: SliceResult[] = [];
     let index = 0;
 
+    const mimeType = `image/${outputFormat}`;
+
     for (let r = 0; r < numRows; r++) {
       for (let c = 0; c < numCols; c++) {
         const xStartOrig = (vRanges[c][0] / 100) * naturalWidth;
@@ -145,8 +148,10 @@ const App: React.FC = () => {
             0, 0, targetW, targetH
         );
 
+        // Quality is only applicable for WebP and JPEG
+        const qVal = outputFormat === 'png' ? undefined : quality;
         const blob = await new Promise<Blob | null>(resolve => 
-          canvas.toBlob(resolve, 'image/webp', quality)
+          canvas.toBlob(resolve, mimeType, qVal)
         );
 
         if (blob) {
@@ -173,7 +178,7 @@ const App: React.FC = () => {
     setTimeout(() => {
       document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
-  }, [image, gridLines, quality, optimizeResolution]);
+  }, [image, gridLines, quality, optimizeResolution, outputFormat]);
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-slate-950 text-slate-100">
@@ -181,7 +186,7 @@ const App: React.FC = () => {
         <div className="w-full bg-amber-500/10 border-b border-amber-500/20 p-3 flex items-center justify-center gap-4 animate-in fade-in slide-in-from-top duration-300">
           <div className="flex items-center gap-2 text-amber-400 text-sm font-medium">
             <AlertCircle className="w-4 h-4 animate-pulse" />
-            <span>Safari detected: WebP compression quality controls work best on Chrome or Chromium-based browsers.</span>
+            <span>Safari detected: WebP compression quality controls work best on Chrome. Use JPEG or PNG for wider compatibility.</span>
           </div>
           <button 
             onClick={() => setShowSafariWarning(false)}
@@ -219,7 +224,7 @@ const App: React.FC = () => {
             </div>
             <h2 className="text-xl font-semibold mb-2">Upload Mosaic Image</h2>
             <p className="text-slate-400 text-center max-w-md mb-8">
-              Adjust lines to remove borders and gutters. Optimized WebP output.
+              Adjust lines to remove borders and gutters. Supports WebP, JPEG, and PNG.
             </p>
             <label className="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl font-semibold transition-all hover:scale-105 active:scale-95 shadow-xl shadow-indigo-500/20">
               Browse Image
@@ -272,7 +277,7 @@ const App: React.FC = () => {
                   className={`w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-4 rounded-xl font-bold transition-all shadow-xl ${settingsDirty ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-500/20 animate-bounce' : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-indigo-500/20'} disabled:opacity-50 text-white`}
                 >
                   {isSlicing ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Scissors className="w-5 h-5" />}
-                  {isSlicing ? "Compressing..." : settingsDirty ? "Apply & Update" : "Generate Slices"}
+                  {isSlicing ? "Processing..." : settingsDirty ? "Apply & Update" : "Generate Slices"}
                 </button>
               </div>
             </div>
@@ -281,13 +286,28 @@ const App: React.FC = () => {
                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
                  <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-3">
                    <SlidersHorizontal className="w-4 h-4 text-indigo-400" />
-                   <h3 className="text-lg font-semibold">Compression Engine</h3>
+                   <h3 className="text-lg font-semibold">Asset Configuration</h3>
                  </div>
                  
                  <div className="space-y-6">
-                   <div className="space-y-3">
+                    <div className="space-y-3">
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Output Format</p>
+                      <div className="grid grid-cols-3 gap-2 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                        {(['webp', 'jpeg', 'png'] as const).map((fmt) => (
+                          <button
+                            key={fmt}
+                            onClick={() => setOutputFormat(fmt)}
+                            className={`py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${outputFormat === fmt ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                          >
+                            {fmt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                   <div className={`space-y-3 transition-opacity ${outputFormat === 'png' ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
                      <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-                       <span>Minimum Size</span>
+                       <span>Smaller File</span>
                        <span>Max Quality</span>
                      </div>
                      <input 
@@ -327,7 +347,7 @@ const App: React.FC = () => {
                  {settingsDirty && (
                    <div className="mt-6 flex items-start gap-2 p-3 rounded-lg bg-amber-900/20 border border-amber-500/20 text-amber-200 text-xs">
                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                     <span>Settings changed. Click <b>Apply & Update</b> to refresh slices with new compression.</span>
+                     <span>Settings changed. Click <b>Apply & Update</b> to refresh slices with new format/compression.</span>
                    </div>
                  )}
                </div>
@@ -335,11 +355,13 @@ const App: React.FC = () => {
                <div className="p-6 rounded-2xl bg-indigo-900/20 border border-indigo-500/20">
                  <div className="flex items-center gap-2 mb-2">
                    <Zap className="w-4 h-4 text-indigo-400" />
-                   <h4 className="text-indigo-300 font-semibold text-sm">Advanced WebP</h4>
+                   <h4 className="text-indigo-300 font-semibold text-sm">Format Information</h4>
                  </div>
-                 <p className="text-[11px] text-indigo-200/70 leading-relaxed">
-                   We use the browser's native WebP encoder with specified quality factors. WebP is ~30% smaller than JPEG at comparable quality.
-                 </p>
+                 <div className="text-[10px] text-indigo-200/70 space-y-2">
+                    <p><b className="text-indigo-300">WEBP:</b> Best for web. Exceptional compression.</p>
+                    <p><b className="text-indigo-300">JPEG:</b> Universal standard. Good for photos.</p>
+                    <p><b className="text-indigo-300">PNG:</b> Lossless. Best for graphics with transparency.</p>
+                 </div>
                </div>
             </div>
           </div>
@@ -353,7 +375,7 @@ const App: React.FC = () => {
               </div>
               <h2 className="text-2xl font-bold">Generated Assets</h2>
             </div>
-            <SlicePreview slices={slices} gridCols={gridLines.vertical.length - 1} />
+            <SlicePreview slices={slices} gridCols={gridLines.vertical.length - 1} format={outputFormat} />
           </div>
         )}
       </main>
