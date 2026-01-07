@@ -1,0 +1,5 @@
+{
+  "name": "GridSlice Pro",
+  "description": "A professional-grade image slicing tool that allows users to upload 3x3 grid images, adjust cutting lines with precision, and download individual tiles instantly.",
+  "requestFramePermissions": []
+}
