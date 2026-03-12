@@ -242,6 +242,12 @@ const App: React.FC = () => {
                   <Grid3X3 className="w-4 h-4" /> 3 x 3
                 </button>
                 <button 
+                  onClick={() => setGridConfig({ rows: 4, cols: 4 })}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${gridConfig.rows === 4 && gridConfig.cols === 4 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-400 hover:text-white'}`}
+                >
+                  <LayoutGrid className="w-4 h-4" /> 4 x 4
+                </button>
+                <button 
                   onClick={() => setGridConfig({ rows: 6, cols: 6 })}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${gridConfig.rows === 6 && gridConfig.cols === 6 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-400 hover:text-white'}`}
                 >
